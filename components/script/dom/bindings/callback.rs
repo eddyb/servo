@@ -10,12 +10,13 @@ use dom::bindings::global::global_object_for_js_object;
 use dom::bindings::js::JSRef;
 use dom::bindings::utils::Reflectable;
 use js::jsapi::{JSContext, JSObject, JS_WrapObject, JS_ObjectIsCallable};
-use js::jsapi::JS_GetProperty;
+use js::jsapi::{JS_GetProperty, JS_IsExceptionPending, JS_ReportPendingException};
 use js::jsval::{JSVal, UndefinedValue};
 
 use std::ptr;
 
 /// The exception handling used for a call.
+#[deriving(PartialEq, Eq)]
 pub enum ExceptionHandling {
     /// Report any exception and don't throw it to the caller code.
     ReportExceptions,
@@ -138,7 +139,7 @@ pub struct CallSetup {
     /// The `JSContext` used for the call.
     cx: *mut JSContext,
     /// The exception handling used for the call.
-    _handling: ExceptionHandling
+    handling: ExceptionHandling
 }
 
 impl CallSetup {
@@ -150,12 +151,24 @@ impl CallSetup {
         let cx = global.root_ref().get_cx();
         CallSetup {
             cx: cx,
-            _handling: handling
+            handling: handling
         }
     }
 
     /// Returns the `JSContext` used for the call.
     pub fn GetContext(&self) -> *mut JSContext {
         self.cx
+    }
+}
+
+impl Drop for CallSetup {
+    fn drop(&mut self) {
+        if self.handling == ReportExceptions {
+            unsafe {
+                if JS_IsExceptionPending(self.cx) != 0 {
+                    JS_ReportPendingException(self.cx);
+                }
+            }
+        }
     }
 }
