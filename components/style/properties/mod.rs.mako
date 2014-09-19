@@ -5,6 +5,7 @@
 // This file is a Mako template: http://www.makotemplates.org/
 
 pub use std::ascii::AsciiExt;
+use std::fmt::Show;
 
 use servo_util::logical_geometry::{WritingMode, LogicalMargin};
 use sync::Arc;
@@ -159,12 +160,22 @@ pub mod longhands {
         <%self:single_component_value name="${name}" experimental="${experimental}">
             ${caller.body()}
             pub mod computed_value {
+                use std::fmt;
                 #[allow(non_camel_case_types)]
-                #[deriving(PartialEq, Clone, FromPrimitive, Show)]
+                #[deriving(PartialEq, Clone, FromPrimitive)]
                 pub enum T {
                     % for value in values.split():
                         ${to_rust_ident(value)},
                     % endfor
+                }
+                impl fmt::Show for T {
+		    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        match self {
+                            % for value in values.split():
+                                &${to_rust_ident(value)} => write!(f, "${value}"),
+                            % endfor
+                        }
+                    }
                 }
             }
             pub type SpecifiedValue = computed_value::T;
@@ -454,10 +465,19 @@ pub mod longhands {
         pub use super::computed_as_specified as to_computed_value;
         pub type SpecifiedValue = computed_value::T;
         pub mod computed_value {
+	    use std::fmt;
             #[deriving(PartialEq, Clone)]
             pub enum T {
                 Auto,
                 Number(i32),
+            }
+	    impl fmt::Show for T {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    match self {
+                        &Auto => write!(f, "auto"),
+                        &Number(number) => write!(f, "{}", number),
+                    }
+                }
             }
 
             impl T {
@@ -537,12 +557,22 @@ pub mod longhands {
     ${switch_to_style_struct("InheritedBox")}
 
     <%self:single_component_value name="line-height">
+        use std::fmt;
         #[deriving(Clone)]
         pub enum SpecifiedValue {
             SpecifiedNormal,
             SpecifiedLength(specified::Length),
             SpecifiedNumber(CSSFloat),
             // percentage are the same as em.
+        }
+        impl fmt::Show for SpecifiedValue {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                match self {
+                    &SpecifiedNormal => write!(f, "normal"),
+                    &SpecifiedLength(length) => write!(f, "{}%", length),
+                    &SpecifiedNumber(number) => write!(f, "{}", number),
+                }
+            }
         }
         /// normal | <number> | <length> | <percentage>
         pub fn from_component_value(input: &ComponentValue, _base_url: &Url)
@@ -585,6 +615,7 @@ pub mod longhands {
     ${switch_to_style_struct("Box")}
 
     <%self:single_component_value name="vertical-align">
+        use std::fmt;
         <% vertical_align_keywords = (
             "baseline sub super top text-top middle bottom text-bottom".split()) %>
         #[allow(non_camel_case_types)]
@@ -594,6 +625,16 @@ pub mod longhands {
                 Specified_${to_rust_ident(keyword)},
             % endfor
             SpecifiedLengthOrPercentage(specified::LengthOrPercentage),
+        }
+        impl fmt::Show for SpecifiedValue {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                match self {
+                    % for keyword in vertical_align_keywords:
+                        &Specified_${to_rust_ident(keyword)} => write!(f, "${keyword}"),
+                    % endfor
+		    &SpecifiedLengthOrPercentage(lop) => write!(f, "{}", lop),
+                }
+            }
         }
         /// baseline | sub | super | top | text-top | middle | bottom | text-bottom
         /// | <percentage> | <length>
@@ -659,9 +700,17 @@ pub mod longhands {
     <%self:longhand name="content">
             pub use super::computed_as_specified as to_computed_value;
             pub mod computed_value {
+	        use std::fmt;
                 #[deriving(PartialEq, Clone)]
                 pub enum ContentItem {
                     StringContent(String),
+                }
+                impl fmt::Show for ContentItem {
+		    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        match self {
+                            &StringContent(ref s) => write!(f, "{}", s),
+                        }
+                    }
                 }
                 #[allow(non_camel_case_types)]
                 #[deriving(PartialEq, Clone)]
@@ -669,6 +718,20 @@ pub mod longhands {
                     normal,
                     none,
                     Content(Vec<ContentItem>),
+                }
+                impl fmt::Show for T {
+		    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        match self {
+			    &normal => write!(f, "normal"),
+			    &none => write!(f, "none"),
+			    &Content(ref content) => {
+                                for c in content.iter() {
+                                    let _ = write!(f, "{} ", c);
+                                }
+				Ok(())
+			    }
+                        }
+                    }
                 }
             }
             pub type SpecifiedValue = computed_value::T;
@@ -783,13 +846,23 @@ pub mod longhands {
     </%self:single_component_value>
 
     <%self:longhand name="background-position">
+            use std::fmt;
+
             pub mod computed_value {
                 use super::super::super::common_types::computed::LengthOrPercentage;
+                use std::fmt;
 
                 #[deriving(PartialEq, Clone)]
                 pub struct T {
                     pub horizontal: LengthOrPercentage,
                     pub vertical: LengthOrPercentage,
+                }
+                impl fmt::Show for T {
+		    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        let _ = write!(f, "{}", self.horizontal);
+                        let _ = write!(f, "{}", self.vertical);
+                        Ok(())
+                    }
                 }
             }
 
@@ -797,6 +870,13 @@ pub mod longhands {
             pub struct SpecifiedValue {
                 pub horizontal: specified::LengthOrPercentage,
                 pub vertical: specified::LengthOrPercentage,
+            }
+            impl fmt::Show for SpecifiedValue {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    let _ = write!(f, "{}", self.horizontal);
+                    let _ = write!(f, "{}", self.vertical);
+                    Ok(())
+                }
             }
 
             impl SpecifiedValue {
@@ -920,6 +1000,7 @@ pub mod longhands {
     <%self:longhand name="font-family">
         pub use super::computed_as_specified as to_computed_value;
         pub mod computed_value {
+            use std::fmt;
             #[deriving(PartialEq, Clone)]
             pub enum FontFamily {
                 FamilyName(String),
@@ -937,7 +1018,22 @@ pub mod longhands {
                     }
                 }
             }
+            impl fmt::Show for FontFamily {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    match self {
+                        &FamilyName(ref name) => write!(f, "{}", name),
+                    }
+                }
+            }
             pub type T = Vec<FontFamily>;
+            /*impl fmt::Show for T {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    for font in self.iter() {
+                        write!(f, "{} ", font);
+                    }
+                    Ok(())
+                }
+            }*/
         }
         pub type SpecifiedValue = computed_value::T;
 
@@ -991,6 +1087,7 @@ pub mod longhands {
     ${single_keyword("font-variant", "normal small-caps")}
 
     <%self:single_component_value name="font-weight">
+        use std::fmt;
         #[deriving(Clone)]
         pub enum SpecifiedValue {
             Bolder,
@@ -998,6 +1095,17 @@ pub mod longhands {
             % for weight in range(100, 901, 100):
                 SpecifiedWeight${weight},
             % endfor
+        }
+        impl fmt::Show for SpecifiedValue {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                match self {
+                    &Bolder => write!(f, "bolder"),
+                    &Lighter => write!(f, "lighter"),
+                    % for weight in range(100, 901, 100):
+                        &SpecifiedWeight${weight} => write!(f, "{}", ${weight}i),
+                    % endfor
+                }
+            }
         }
         /// normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900
         pub fn from_component_value(input: &ComponentValue, _base_url: &Url)
@@ -1183,6 +1291,7 @@ pub mod longhands {
 
     <%self:longhand name="text-decoration">
         pub use super::computed_as_specified as to_computed_value;
+        use std::fmt;
         #[deriving(PartialEq, Clone)]
         pub struct SpecifiedValue {
             pub underline: bool,
@@ -1190,6 +1299,20 @@ pub mod longhands {
             pub line_through: bool,
             // 'blink' is accepted in the parser but ignored.
             // Just not blinking the text is a conforming implementation per CSS 2.1.
+        }
+        impl fmt::Show for SpecifiedValue {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                if self.underline {
+                    let _ = write!(f, "underline ");
+                }
+                if self.overline {
+                    let _ = write!(f, "overline ");
+                }
+                if self.line_through {
+                    let _ = write!(f, "line-through ");
+                }
+		Ok(())
+            }
         }
         pub mod computed_value {
             pub type T = super::SpecifiedValue;
@@ -2165,6 +2288,15 @@ pub enum DeclaredValue<T> {
     // depending on whether the property is inherited.
 }
 
+impl<T: Show> DeclaredValue<T> {
+    pub fn specified_value(&self) -> Option<String> {
+        match self {
+            &SpecifiedValue(ref inner) => Some(format!("{}", inner)),
+            _ => None,
+        }
+    }
+}
+
 #[deriving(Clone)]
 pub enum PropertyDeclaration {
     % for property in LONGHANDS:
@@ -2180,8 +2312,41 @@ pub enum PropertyDeclarationParseResult {
     ValidOrIgnoredDeclaration,
 }
 
-
 impl PropertyDeclaration {
+    pub fn name(&self) -> String {
+        match self {
+            % for property in LONGHANDS:
+                % if property.derived_from is None:
+                    &${property.camel_case}Declaration(..) => "${property.name}".to_string(),
+		% endif
+            % endfor
+            _ => "".to_string(),
+        }
+    }
+
+    pub fn value(&self) -> Option<String> {
+        match self {
+            % for property in LONGHANDS:
+                % if property.derived_from is None:
+                    &${property.camel_case}Declaration(ref value) => value.specified_value(),
+		% endif
+            % endfor
+            _ => None,
+        }
+    }
+
+    pub fn matches(&self, name: &str) -> bool {
+        let name_lower = name.as_slice().to_ascii_lower();
+        match (self, name_lower.as_slice()) {
+            % for property in LONGHANDS:
+                % if property.derived_from is None:
+                    (&${property.camel_case}Declaration(..), "${property.name}") => true,
+		% endif
+            % endfor
+            _ => false,
+        }
+    }
+
     pub fn parse(name: &str, value: &[ComponentValue],
                  result_list: &mut Vec<PropertyDeclaration>,
                  base_url: &Url,
@@ -2813,6 +2978,18 @@ pub fn cascade_anonymous(parent_style: &ComputedValues) -> ComputedValues {
     result
 }
 
+pub fn longhands_from_shorthand(shorthand: &str) -> Option<Vec<String>> {
+    match shorthand {
+        % for property in SHORTHANDS:
+            "${property.name}" => Some(vec!(
+            % for sub in property.sub_properties:
+                "${sub.name}".to_string(),
+            % endfor
+            )),
+        % endfor
+        _ => None,
+    }
+}
 
 // Only re-export the types for computed values.
 pub mod computed_values {
