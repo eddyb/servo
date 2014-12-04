@@ -68,6 +68,7 @@ pub struct Browser<Window> {
 impl<Window> Browser<Window> where Window: WindowMethods + 'static {
     #[cfg(not(test))]
     pub fn new(window: Option<Rc<Window>>) -> Browser<Window> {
+        panic!()
         ::servo_util::opts::set_experimental_enabled(opts::get().enable_experimental);
         let opts = opts::get();
         RegisterBindings::RegisterProxyHandlers();
