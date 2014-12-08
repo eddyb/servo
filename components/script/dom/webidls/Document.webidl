@@ -18,6 +18,7 @@ interface Document : Node {
   readonly attribute DOMString characterSet;
   readonly attribute DOMString inputEncoding;
   readonly attribute DOMString contentType;
+           attribute DOMString cookie;
 
   readonly attribute DocumentType? doctype;
   readonly attribute Element? documentElement;

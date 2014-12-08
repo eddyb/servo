@@ -528,6 +528,14 @@ impl<'a> DocumentMethods for JSRef<'a, Document> {
         self.content_type.clone()
     }
 
+    fn Cookie(self) -> DOMString {
+        "".to_string()
+    }
+
+    fn SetCookie(self, value: DOMString) {
+        println!("attempted setting document.cookie to {}", value);
+    }
+
     // http://dom.spec.whatwg.org/#dom-document-doctype
     fn GetDoctype(self) -> Option<Temporary<DocumentType>> {
         let node: JSRef<Node> = NodeCast::from_ref(self);
