@@ -536,6 +536,14 @@ impl<'a> DocumentMethods for JSRef<'a, Document> {
         println!("attempted setting document.cookie to {}", value);
     }
 
+    fn Domain(self) -> DOMString {
+        "".to_string()
+    }
+
+    fn SetDomain(self, value: DOMString) {
+        println!("attempted setting document.domain to {}", value);
+    }
+
     // http://dom.spec.whatwg.org/#dom-document-doctype
     fn GetDoctype(self) -> Option<Temporary<DocumentType>> {
         let node: JSRef<Node> = NodeCast::from_ref(self);
