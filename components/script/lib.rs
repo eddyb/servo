@@ -95,6 +95,7 @@ pub mod dom {
     pub mod console;
     mod create;
     pub mod customevent;
+    pub mod cssstyledeclaration;
     pub mod dedicatedworkerglobalscope;
     pub mod document;
     pub mod documentfragment;

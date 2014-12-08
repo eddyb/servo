@@ -12,8 +12,10 @@ use dom::bindings::codegen::Bindings::WindowBinding::WindowMethods;
 use dom::bindings::codegen::InheritTypes::{ElementCast, HTMLFrameSetElementDerived};
 use dom::bindings::codegen::InheritTypes::{EventTargetCast, HTMLInputElementCast};
 use dom::bindings::codegen::InheritTypes::{HTMLElementDerived, HTMLBodyElementDerived};
+use dom::bindings::global::Window;
 use dom::bindings::js::{JSRef, Temporary};
 use dom::bindings::utils::{Reflectable, Reflector};
+use dom::cssstyledeclaration::CSSStyleDeclaration;
 use dom::document::Document;
 use dom::element::{Element, ElementTypeId, ElementTypeId_, HTMLElementTypeId, ActivationElementHelpers};
 use dom::eventtarget::{EventTarget, EventTargetHelpers, NodeTargetTypeId};
@@ -91,6 +93,11 @@ impl<'a> HTMLElementMethods for JSRef<'a, HTMLElement> {
             let win = window_from_node(self).root();
             win.SetOnload(listener)
         }
+    }
+
+    fn Style(self) -> Temporary<CSSStyleDeclaration> {
+        let window = window_from_node(self).root();
+        CSSStyleDeclaration::new(Window(*window))
     }
 
     // https://html.spec.whatwg.org/multipage/interaction.html#dom-click
