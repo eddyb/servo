@@ -15,6 +15,7 @@ interface URLUtils {
   //         attribute ScalarValueString password;
   //         attribute ScalarValueString host;
   //         attribute ScalarValueString hostname;
+  readonly attribute DOMString hostname;
   //         attribute ScalarValueString port;
   //         attribute ScalarValueString pathname;
   //         attribute ScalarValueString search;
