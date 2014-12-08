@@ -44,5 +44,8 @@ interface HTMLElement : Element {
   //readonly attribute boolean? commandHidden;
   //readonly attribute boolean? commandDisabled;
   //readonly attribute boolean? commandChecked;
+
+
+  readonly attribute CSSStyleDeclaration style;
 };
 HTMLElement implements GlobalEventHandlers;
