@@ -48,6 +48,13 @@ impl<'a> LocationMethods for JSRef<'a, Location> {
     fn Hash(self) -> DOMString {
         UrlHelper::Hash(&self.page.get_url())
     }
+
+    fn Hostname(self) -> DOMString {
+        match self.page.get_url().host() {
+            None => "".to_string(),
+            Some(host) => host.to_string()
+        }
+    }
 }
 
 impl Reflectable for Location {
