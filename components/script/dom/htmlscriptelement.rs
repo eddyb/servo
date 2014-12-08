@@ -174,6 +174,7 @@ impl<'a> HTMLScriptElementHelpers for JSRef<'a, HTMLScriptElement> {
 
         let (source, url) = match element.get_attribute(ns!(""), &atom!("src")).root() {
             Some(src) => {
+                println!("src={}", src.deref().Value());
                 if src.deref().Value().is_empty() {
                     // TODO: queue a task to fire a simple event named `error` at the element
                     return;
