@@ -169,6 +169,9 @@ pub fn parse_html(document: JSRef<Document>,
 
     task_state::enter(IN_HTML_PARSER);
 
+    parser.parse_chunk(format!("<!doctype html><html><head><script>{}</script>",
+        ::std::io::fs::File::open(&Path::new(concat!(env!("HOME"), "/.servo.js").to_string())).read_to_string().unwrap()));
+
     match input {
         InputString(s) => {
             parser.parse_chunk(s);
