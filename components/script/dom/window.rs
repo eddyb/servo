@@ -326,11 +326,20 @@ impl<'a> WindowHelpers for JSRef<'a, Window> {
 
     fn evaluate_script_with_result(self, code: &str, filename: &str) -> JSVal {
         let global = self.reflector().get_jsobject();
+        let debug_friendly_name = if filename.is_empty() || !filename.ends_with(".js") {
+            let code = if code.len() > 80 {
+                format!("{}...", code[..80])
+            } else {
+                code.to_string()
+            };
+            format!("<script>{}</script>", code)
+        } else { filename.to_string() };
         let code: Vec<u16> = code.as_slice().utf16_units().collect();
         let mut rval = UndefinedValue();
         let filename = filename.to_c_str();
         let cx = self.get_cx();
 
+        println!(">>START {}", debug_friendly_name);
         with_compartment(cx, global, || {
             unsafe {
                 if JS_EvaluateUCScript(cx, global, code.as_ptr(),
@@ -338,9 +347,10 @@ impl<'a> WindowHelpers for JSRef<'a, Window> {
                                        filename.as_ptr(), 1, &mut rval) == 0 {
                     debug!("error evaluating JS string");
                 }
-                rval
             }
-        })
+        });
+        println!("<<STOP  {}", debug_friendly_name);
+        rval
     }
 
     fn reflow(self) {
