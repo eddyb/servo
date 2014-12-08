@@ -15,6 +15,7 @@ use dom::bindings::codegen::Bindings::ElementBinding::ElementMethods;
 use dom::bindings::codegen::Bindings::EventBinding::EventMethods;
 use dom::bindings::codegen::Bindings::HTMLInputElementBinding::HTMLInputElementMethods;
 use dom::bindings::codegen::Bindings::NamedNodeMapBinding::NamedNodeMapMethods;
+use dom::bindings::codegen::Bindings::NodeBinding::NodeMethods;
 use dom::bindings::codegen::InheritTypes::{ElementDerived, HTMLInputElementDerived, HTMLTableCellElementDerived};
 use dom::bindings::codegen::InheritTypes::{HTMLInputElementCast, NodeCast, EventTargetCast, ElementCast};
 use dom::bindings::js::{MutNullableJS, JS, JSRef, Temporary, TemporaryPushable};
@@ -38,6 +39,7 @@ use dom::node::{window_from_node, LayoutNodeHelpers};
 use dom::nodelist::NodeList;
 use dom::virtualmethods::{VirtualMethods, vtable_for};
 use devtools_traits::AttrInfo;
+use parse::html::parse_html_into_node;
 use style::{IntegerAttribute, LengthAttribute, SizeIntegerAttribute, WidthLengthAttribute};
 use style::{matches, parse_selector_list_from_str};
 use style;
@@ -939,6 +941,21 @@ impl<'a> ElementMethods for JSRef<'a, Element> {
     fn GetInnerHTML(self) -> Fallible<DOMString> {
         //XXX TODO: XML case
         Ok(serialize(&mut NodeIterator::new(NodeCast::from_ref(self), false, false)))
+    }
+
+    fn SetInnerHTML(self, value: DOMString) -> Fallible<()> {
+        //XXX TODO: XML case
+
+        // Step 1. Remove all children.
+        let parent: JSRef<Node> = NodeCast::from_ref(self);
+        for child in parent.children() {
+            try!(parent.RemoveChild(child));
+        }
+
+        // Step 2. Parse the HTML, inserting into self.
+        parse_html_into_node(parent, value);
+
+        Ok(())
     }
 
     fn GetOuterHTML(self) -> Fallible<DOMString> {
