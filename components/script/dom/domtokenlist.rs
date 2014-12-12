@@ -47,7 +47,7 @@ impl Reflectable for DOMTokenList {
 
 trait PrivateDOMTokenListHelpers {
     fn attribute(self) -> Option<Temporary<Attr>>;
-    fn check_token_exceptions<'a>(self, token: &'a str) -> Fallible<&'a str>;
+    fn check_token_exceptions<'a>(self, token: &'a str) -> Fallible<()>;
 }
 
 impl<'a> PrivateDOMTokenListHelpers for JSRef<'a, DOMTokenList> {
@@ -56,11 +56,11 @@ impl<'a> PrivateDOMTokenListHelpers for JSRef<'a, DOMTokenList> {
         element.get_attribute(ns!(""), &self.local_name)
     }
 
-    fn check_token_exceptions<'a>(self, token: &'a str) -> Fallible<&'a str> {
+    fn check_token_exceptions<'a>(self, token: &'a str) -> Fallible<()> {
         match token {
             "" => Err(Syntax),
-            token if token.find(HTML_SPACE_CHARACTERS).is_some() => Err(InvalidCharacter),
-            token => Ok(token)
+            slice if slice.find(HTML_SPACE_CHARACTERS).is_some() => Err(InvalidCharacter),
+            _ => Ok(())
         }
     }
 }
@@ -89,13 +89,14 @@ impl<'a> DOMTokenListMethods for JSRef<'a, DOMTokenList> {
 
     // http://dom.spec.whatwg.org/#dom-domtokenlist-contains
     fn Contains(self, token: DOMString) -> Fallible<bool> {
-        self.check_token_exceptions(token.as_slice()).map(|slice| {
+        let token = Atom::from_slice(token.as_slice());
+        self.check_token_exceptions(token.as_slice()).map(|()| {
             self.attribute().root().map(|attr| {
-                let value = attr.value();
-                let tokens = value.tokens()
-                                  .expect("Should have parsed this attribute");
-                let atom = Atom::from_slice(slice);
-                tokens.iter().any(|token| *token == atom)
+                attr.value()
+                    .tokens()
+                    .expect("Should have parsed this attribute")
+                    .iter()
+                    .any(|atom| *atom == token)
             }).unwrap_or(false)
         })
     }
