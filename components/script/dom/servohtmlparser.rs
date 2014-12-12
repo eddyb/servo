@@ -7,11 +7,12 @@
 
 use dom::bindings::cell::DOMRefCell;
 use dom::bindings::codegen::Bindings::ServoHTMLParserBinding;
+use dom::bindings::codegen::InheritTypes::NodeCast;
 use dom::bindings::global;
 use dom::bindings::trace::JSTraceable;
 use dom::bindings::js::{JS, JSRef, Temporary};
 use dom::bindings::utils::{Reflectable, Reflector, reflect_dom_object};
-use dom::node::TrustedNodeAddress;
+use dom::node::{Node, TrustedNodeAddress};
 use dom::document::{Document, DocumentHelpers};
 use parse::Parser;
 
@@ -29,6 +30,7 @@ use html5ever::tree_builder::{TreeBuilder, TreeBuilderOpts};
 pub struct Sink {
     pub base_url: Option<Url>,
     pub document: JS<Document>,
+    pub root_node: JS<Node>
 }
 
 pub type Tokenizer = tokenizer::Tokenizer<TreeBuilder<TrustedNodeAddress, Sink>>;
@@ -53,15 +55,22 @@ impl Parser for ServoHTMLParser{
 
 impl ServoHTMLParser {
     #[allow(unrooted_must_root)]
-    pub fn new(base_url: Option<Url>, document: JSRef<Document>) -> Temporary<ServoHTMLParser> {
+    pub fn new<'a>(base_url: Option<Url>,
+                   document: JSRef<'a, Document>,
+                   root_node: JSRef<'a, Node>)
+                   -> Temporary<ServoHTMLParser> {
         let window = document.window().root();
         let sink = Sink {
             base_url: base_url,
             document: JS::from_rooted(document),
+            root_node: JS::from_rooted(root_node)
         };
+
+        let document: JSRef<Node> = NodeCast::from_ref(document);
 
         let tb = TreeBuilder::new(sink, TreeBuilderOpts {
             ignore_missing_rules: true,
+            fragment: root_node != document,
             .. Default::default()
         });
 

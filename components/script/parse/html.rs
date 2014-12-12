@@ -12,7 +12,7 @@ use dom::documenttype::DocumentType;
 use dom::element::{Element, AttributeHandlers, ElementHelpers, ParserCreated};
 use dom::htmlscriptelement::HTMLScriptElement;
 use dom::htmlscriptelement::HTMLScriptElementHelpers;
-use dom::node::{Node, NodeHelpers, TrustedNodeAddress};
+use dom::node::{Node, NodeHelpers, TrustedNodeAddress, document_from_node};
 use dom::servohtmlparser;
 use dom::servohtmlparser::ServoHTMLParser;
 use dom::text::Text;
@@ -55,9 +55,7 @@ impl SinkHelpers for servohtmlparser::Sink {
 
 impl<'a> TreeSink<TrustedNodeAddress> for servohtmlparser::Sink {
     fn get_document(&mut self) -> TrustedNodeAddress {
-        let doc = self.document.root();
-        let node: JSRef<Node> = NodeCast::from_ref(*doc);
-        node.to_trusted_node_address()
+        self.root_node.root().to_trusted_node_address()
     }
 
     fn same_node(&self, x: TrustedNodeAddress, y: TrustedNodeAddress) -> bool {
@@ -164,7 +162,8 @@ impl<'a> TreeSink<TrustedNodeAddress> for servohtmlparser::Sink {
 pub fn parse_html(document: JSRef<Document>,
                   input: HTMLInput,
                   url: &Url) {
-    let parser = ServoHTMLParser::new(Some(url.clone()), document).root();
+    let root_node: JSRef<Node> = NodeCast::from_ref(document);
+    let parser = ServoHTMLParser::new(Some(url.clone()), document, root_node).root();
     let parser: JSRef<ServoHTMLParser> = *parser;
 
     task_state::enter(IN_HTML_PARSER);
@@ -206,4 +205,18 @@ pub fn parse_html(document: JSRef<Document>,
     task_state::exit(IN_HTML_PARSER);
 
     debug!("finished parsing");
+}
+
+pub fn parse_html_into_node(root_node: JSRef<Node>, input: String) {
+    let document = document_from_node(root_node).root();
+    let window = document.window().root();
+    let base_url = match *window.page().url() {
+        Some((ref page_url, _)) => Some(page_url.clone()),
+        None => None
+    };
+
+    let parser = ServoHTMLParser::new(base_url, *document, root_node).root();
+    let parser: JSRef<ServoHTMLParser> = *parser;
+    parser.parse_chunk(input);
+    parser.finish();
 }
