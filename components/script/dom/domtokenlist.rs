@@ -100,4 +100,38 @@ impl<'a> DOMTokenListMethods for JSRef<'a, DOMTokenList> {
             }).unwrap_or(false)
         })
     }
+
+    // https://dom.spec.whatwg.org/#dom-domtokenlist-add
+    fn Add(self, tokens: Vec<DOMString>) -> Fallible<()> {
+        match self.attribute().root() {
+            Some(attr) => {
+                let mut atoms: Vec<Atom> = attr.value().tokens().expect("Should have parsed this attribute")
+                                               .iter().map(|atom| atom.clone()).collect();
+
+                for token in tokens.iter().map(|token| Atom::from_slice(token.as_slice())) {
+                    let check = self.check_token_exceptions(token.as_slice()).map(|()| {
+                        if !atoms.iter().any(|atom| *atom == token) {
+                            atoms.push(token.clone());
+                        }
+                    });
+                    if check.is_err() {
+                        return Err(check.unwrap_err());
+                    }
+                }
+
+                let mut tokenlist = String::new();
+                for token in atoms.iter() {
+                    if !tokenlist.is_empty() {
+                        tokenlist.push('\u0020');
+                    }
+                    tokenlist.push_str(token.as_slice());
+                }
+
+                let element = self.element.root();
+                element.set_tokenlist_attribute(&self.local_name, tokenlist);
+            },
+            None => ()
+        }
+        Ok(())
+    }
 }
