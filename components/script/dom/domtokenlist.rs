@@ -168,4 +168,50 @@ impl<'a> DOMTokenListMethods for JSRef<'a, DOMTokenList> {
         }
         Ok(())
     }
+
+    // https://dom.spec.whatwg.org/#dom-domtokenlist-toggle
+    fn Toggle(self, token: DOMString, force: Option<bool>) -> Fallible<bool> {
+        let mut res = false;
+        match self.attribute().root() {
+            Some(attr) => {
+                let mut atoms: Vec<Atom> = attr.value().tokens().expect("Should have parsed this attribute")
+                                               .iter().map(|atom| atom.clone()).collect();
+
+                let token = Atom::from_slice(token.as_slice());
+                match self.check_token_exceptions(token.as_slice()) {
+                    Ok(_) => match atoms.iter().position(|atom| *atom == token) {
+                        Some(index) => {
+                            if force.is_some() && force.unwrap() == true {
+                                return Ok(true);
+                            }
+                            atoms.remove(index);
+                            res = false;
+                        },
+                        None => {
+                            if force.is_some() && force.unwrap() == false {
+                                return Ok(false);
+                            }
+                            atoms.push(token);
+                            res = true;
+                        }
+                    },
+                    Err(error) => { return Err(error); }
+                }
+
+                let mut tokenlist = String::new();
+                for token in atoms.iter() {
+                    if !tokenlist.is_empty() {
+                        tokenlist.push('\u0020');
+                    }
+                    tokenlist.push_str(token.as_slice());
+                }
+
+                let element = self.element.root();
+                element.set_tokenlist_attribute(&self.local_name, tokenlist);
+            },
+            None => ()
+        }
+
+        Ok(res)
+    }
 }
