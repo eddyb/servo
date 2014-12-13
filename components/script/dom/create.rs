@@ -66,7 +66,7 @@ use dom::htmltableelement::HTMLTableElement;
 use dom::htmltableheadercellelement::HTMLTableHeaderCellElement;
 use dom::htmltablerowelement::HTMLTableRowElement;
 use dom::htmltablesectionelement::HTMLTableSectionElement;
-use dom::htmltemplateelement::HTMLTemplateElement;
+//use dom::htmltemplateelement::HTMLTemplateElement;
 use dom::htmltextareaelement::HTMLTextAreaElement;
 use dom::htmltimeelement::HTMLTimeElement;
 use dom::htmltitleelement::HTMLTitleElement;
@@ -205,7 +205,7 @@ pub fn create_element(name: QualName, prefix: Option<DOMString>,
         atom!("table")      => make!(HTMLTableElement),
         atom!("tbody")      => make!(HTMLTableSectionElement),
         atom!("td")         => make!(HTMLTableDataCellElement),
-        atom!("template")   => make!(HTMLTemplateElement),
+        //atom!("template")   => make!(HTMLTemplateElement),
         atom!("textarea")   => make!(HTMLTextAreaElement),
         atom!("th")         => make!(HTMLTableHeaderCellElement),
         atom!("time")       => make!(HTMLTimeElement),
