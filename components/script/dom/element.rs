@@ -10,6 +10,7 @@ use dom::attr::{AttrValue, StringAttrValue, UIntAttrValue, AtomAttrValue};
 use dom::namednodemap::NamedNodeMap;
 use dom::bindings::cell::DOMRefCell;
 use dom::bindings::codegen::Bindings::AttrBinding::AttrMethods;
+use dom::bindings::codegen::Bindings::DocumentBinding::DocumentMethods;
 use dom::bindings::codegen::Bindings::ElementBinding;
 use dom::bindings::codegen::Bindings::ElementBinding::ElementMethods;
 use dom::bindings::codegen::Bindings::EventBinding::EventMethods;
@@ -707,10 +708,11 @@ impl<'a> AttributeHandlers for JSRef<'a, Element> {
         }
         let url = self.get_string_attribute(name);
         let doc = document_from_node(self).root();
-        let base = doc.url();
+        let base = doc.url().clone();
+        let base = doc.QuerySelector("base".to_string()).unwrap().map_or(base, |base|  UrlParser::new().parse(base.root().get_string_attribute(&atom!("href")).as_slice()).unwrap());
         // https://html.spec.whatwg.org/multipage/infrastructure.html#reflect
         // XXXManishearth this doesn't handle `javascript:` urls properly
-        match UrlParser::new().base_url(base).parse(url.as_slice()) {
+        match UrlParser::new().base_url(&base).parse(url.as_slice()) {
             Ok(parsed) => parsed.serialize(),
             Err(_) => "".to_string()
         }
