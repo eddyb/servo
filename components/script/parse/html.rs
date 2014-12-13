@@ -16,6 +16,7 @@ use dom::node::{Node, NodeHelpers, TrustedNodeAddress, document_from_node};
 use dom::servohtmlparser;
 use dom::servohtmlparser::ServoHTMLParser;
 use dom::text::Text;
+use dom::window::WindowHelpers;
 use parse::Parser;
 
 use encoding::all::UTF_8;
@@ -168,8 +169,9 @@ pub fn parse_html(document: JSRef<Document>,
 
     task_state::enter(IN_HTML_PARSER);
 
-    parser.parse_chunk(format!("<!doctype html><html><head><script>{}</script>",
-        ::std::io::fs::File::open(&Path::new(concat!(env!("HOME"), "/.servo.js").to_string())).read_to_string().unwrap()));
+    let src = ::std::io::fs::File::open(&Path::new(concat!(env!("HOME"), "/.servo.js").to_string())).read_to_string().unwrap();
+    let window = document.window().root();
+    (*window).evaluate_script_with_result(src.as_slice(), "servo://user-agent-script.js");
 
     match input {
         InputString(s) => {
