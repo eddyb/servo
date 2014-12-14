@@ -29,7 +29,7 @@ use script_traits::UntrustedNodeAddress;
 use servo_msg::compositor_msg::LayerId;
 use servo_net::image::base::Image;
 use servo_util::dlist as servo_dlist;
-use servo_util::geometry::{mod, Au, ZERO_POINT};
+use servo_util::geometry::{mod, Au/*, ZERO_POINT*/};
 use servo_util::range::Range;
 use servo_util::smallvec::{SmallVec, SmallVec8};
 use std::fmt;
@@ -179,7 +179,10 @@ impl StackingContext {
             display_list: display_list,
             layer: layer,
             bounds: bounds,
-            clip_rect: Rect(ZERO_POINT, bounds.size),
+            clip_rect: Rect(Point2D {
+                x: Au(-6000),
+                y: Au(-6000),
+            }, bounds.size),
             z_index: z_index,
             opacity: opacity,
         }

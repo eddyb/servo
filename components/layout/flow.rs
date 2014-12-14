@@ -1205,6 +1205,16 @@ impl<'a> MutableFlowUtils for &'a mut Flow + 'a {
                 overflow = overflow.union(&kid_overflow)
             }
         }
+        /*for box_shadow in self.style().get_effects().box_shadow.iter() {
+            let inflation = (box_shadow.spread_radius + box_shadow.blur_radius) *
+                BOX_SHADOW_INFLATION_FACTOR;
+            result = my_position.translate(&Point2D(box_shadow.offset_x, box_shadow.offset_y))
+                                .inflate(inflation, inflation).union(&result);
+        }*/
+        overflow.start.i = overflow.start.i - Au(6000);
+        overflow.start.b = overflow.start.b - Au(6000);
+        overflow.size.inline = overflow.size.inline + Au(6000*2);
+        overflow.size.block = overflow.size.block + Au(6000*2);
         mut_base(self).overflow = overflow;
     }
 

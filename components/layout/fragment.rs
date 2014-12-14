@@ -23,7 +23,7 @@ use util::OpaqueNodeMethods;
 use wrapper::{TLayoutNode, ThreadSafeLayoutNode};
 
 use geom::{Point2D, Rect, Size2D};
-use gfx::display_list::OpaqueNode;
+use gfx::display_list::{BOX_SHADOW_INFLATION_FACTOR, OpaqueNode};
 use gfx::text::glyph::CharIndex;
 use gfx::text::text_run::{TextRun, TextRunSlice};
 use script_traits::UntrustedNodeAddress;
@@ -1544,9 +1544,17 @@ impl Fragment {
                                     -> Rect<Au> {
         // FIXME(#2795): Get the real container size
         let container_size = Size2D::zero();
-        self.border_box
-            .to_physical(self.style.writing_mode, container_size)
-            .translate(stacking_relative_flow_origin)
+        let bounds = self.border_box
+                         .to_physical(self.style.writing_mode, container_size)
+                         .translate(stacking_relative_flow_origin);
+        let mut result = bounds;
+        for box_shadow in self.style().get_effects().box_shadow.iter() {
+            let _inflation = (box_shadow.spread_radius + box_shadow.blur_radius) *
+                BOX_SHADOW_INFLATION_FACTOR;
+            //result = bounds.translate(&Point2D(box_shadow.offset_x, box_shadow.offset_y))
+            //               .inflate(inflation, inflation).union(&result);
+        }
+        result
     }
 
     /// Returns true if this fragment establishes a new stacking context and false otherwise.

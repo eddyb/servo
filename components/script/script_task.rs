@@ -23,6 +23,7 @@ use dom::event::{Event, EventHelpers, Bubbles, DoesNotBubble, Cancelable, NotCan
 use dom::uievent::UIEvent;
 use dom::eventtarget::{EventTarget, EventTargetHelpers};
 use dom::keyboardevent::KeyboardEvent;
+use dom::mouseevent::MouseEvent;
 use dom::node::{mod, ElementNodeTypeId, Node, NodeHelpers, OtherNodeDamage};
 use dom::window::{Window, WindowHelpers};
 use dom::worker::{Worker, TrustedWorkerAddress};
@@ -923,8 +924,12 @@ impl ScriptTask {
               self.handle_click_event(pipeline_id, _button, point);
             }
 
-            MouseDownEvent(..) => {}
-            MouseUpEvent(..) => {}
+            MouseDownEvent(button, point) => {
+              self.handle_mouse_event(pipeline_id, button, point, "mousedown");
+            }
+            MouseUpEvent(button, point) => {
+              self.handle_mouse_event(pipeline_id, button, point, "mouseup");
+            }
             MouseMoveEvent(point) => {
               self.handle_mouse_move_event(pipeline_id, point);
             }
@@ -1137,6 +1142,59 @@ impl ScriptTask {
         }
     }
 
+    fn handle_mouse_event(&self, pipeline_id: PipelineId, button: uint, point: Point2D<f32>,
+                          subtype: &str) {
+        debug!("MouseEvent: {} with button {} at {}", button, subtype, point);
+        let page = get_page(&*self.page.borrow(), pipeline_id);
+        match page.hit_test(&point) {
+            Some(node_address) => {
+                debug!("node address is {}", node_address);
+
+                let temp_node =
+                        node::from_untrusted_node_address(
+                            self.js_runtime.ptr, node_address).root();
+
+                let maybe_node = if !temp_node.is_element() {
+                    temp_node.ancestors().find(|node| node.is_element())
+                } else {
+                    Some(*temp_node)
+                };
+
+                match maybe_node {
+                    Some(node) => {
+                        debug!("{} on {:s}", subtype,node.debug_str());
+                        match *page.frame() {
+                            Some(ref frame) => {
+                                let window = frame.window.root();
+                                let doc = window.Document().root();
+                                doc.begin_focus_transaction();
+
+                                let mouse = MouseEvent::new(*window, subtype.to_string(),
+                                                            true, true, Some(*window), 1,
+                                                            point.x as i32, point.y as i32,
+                                                            point.x as i32, point.y as i32,
+                                                            false, false, false, false,
+                                                            0, None).root();
+                                let event: JSRef<Event> = EventCast::from_ref(*mouse);
+                                // https://dvcs.w3.org/hg/dom3events/raw-file/tip/html/DOM3-Events.html#trusted-events
+                                event.set_trusted(true);
+                                let el = ElementCast::to_ref(node).unwrap(); // is_element() check already exists above
+                                let target: JSRef<EventTarget> = EventTargetCast::from_ref(el);
+                                target.dispatch_event_with_target(None, event).ok();
+
+                                doc.commit_focus_transaction();
+                                window.flush_layout();
+                            }
+                            None => {}
+                        }
+                    }
+                    None => {}
+                }
+            }
+
+            None => {}
+        }
+    }
 
     fn handle_mouse_move_event(&self, pipeline_id: PipelineId, point: Point2D<f32>) {
         let page = get_page(&*self.page.borrow(), pipeline_id);
