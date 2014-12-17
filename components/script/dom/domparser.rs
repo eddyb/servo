@@ -6,6 +6,7 @@ use dom::bindings::codegen::Bindings::DocumentBinding::DocumentReadyStateValues;
 use dom::bindings::codegen::Bindings::DOMParserBinding;
 use dom::bindings::codegen::Bindings::DOMParserBinding::DOMParserMethods;
 use dom::bindings::codegen::Bindings::DOMParserBinding::SupportedTypeValues::{Text_html, Text_xml};
+use dom::bindings::codegen::InheritTypes::NodeCast;
 use dom::bindings::error::{Fallible, FailureUnknown};
 use dom::bindings::global::GlobalRef;
 use dom::bindings::global;
@@ -13,6 +14,7 @@ use dom::bindings::js::{JS, JSRef, Temporary};
 use dom::bindings::utils::{Reflector, Reflectable, reflect_dom_object};
 use dom::document::{Document, DocumentHelpers, HTMLDocument, NonHTMLDocument};
 use dom::document::{FromParser, NotFromParser};
+use dom::node::Node;
 use dom::servohtmlparser::ServoHTMLParser;
 use dom::window::Window;
 use parse::Parser;
@@ -55,7 +57,8 @@ impl<'a> DOMParserMethods for JSRef<'a, DOMParser> {
             Text_html => {
                 let document = Document::new(window, url.clone(), HTMLDocument,
                                              Some(content_type), FromParser).root().clone();
-                let parser = ServoHTMLParser::new(url.clone(), document).root().clone();
+                let root_node: JSRef<Node> = NodeCast::from_ref(document);
+                let parser = ServoHTMLParser::new(url.clone(), document, root_node).root().clone();
                 parser.parse_chunk(s);
                 parser.finish();
                 document.set_ready_state(DocumentReadyStateValues::Complete);
