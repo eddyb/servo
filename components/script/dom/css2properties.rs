@@ -259,6 +259,9 @@ impl<'a> CSS2PropertiesMethods for JSRef<'a, CSS2Properties> {
     css_getter!(ZIndex, "z-index")
     css_setter!(SetZIndex, "z-index")
 
+    css_getter!(Opacity, "opacity")
+    css_setter!(SetOpacity, "opacity")
+
     fn IndexedGetter(self, index: u32, found: &mut bool) -> DOMString {
         let decl: JSRef<CSSStyleDeclaration> = CSSStyleDeclarationCast::from_ref(self);
         decl.IndexedGetter(index, found)

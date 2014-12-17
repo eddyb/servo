@@ -103,4 +103,5 @@ interface CSS2Properties : CSSStyleDeclaration {
   [TreatNullAs=EmptyString] attribute DOMString maxWidth;
 
   [TreatNullAs=EmptyString] attribute DOMString zIndex;
+  [TreatNullAs=EmptyString] attribute DOMString opacity;
 };
