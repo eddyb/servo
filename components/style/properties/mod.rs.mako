@@ -1545,6 +1545,7 @@ pub mod longhands {
     </%self:single_component_value>
 
     <%self:longhand name="box-shadow">
+        use std::fmt;
         use cssparser;
 
         pub type SpecifiedValue = Vec<SpecifiedBoxShadow>;
@@ -1558,8 +1559,23 @@ pub mod longhands {
             pub color: Option<specified::CSSColor>,
             pub inset: bool,
         }
+        impl fmt::Show for SpecifiedBoxShadow {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                try!(write!(f, "{} {} {} {}", self.offset_x, self.offset_y,
+                            self.blur_radius, self.spread_radius));
+                match self.color {
+                    Some(ref color) => try!(write!(f, " {}", color)),
+                    None => {}
+                }
+                if self.inset {
+                    try!(write!(f, " inset"));
+                }
+                Ok(())
+            }
+        }
 
         pub mod computed_value {
+        use std::fmt;
             use super::super::Au;
             use super::super::super::computed;
 
@@ -1573,6 +1589,13 @@ pub mod longhands {
                 pub spread_radius: Au,
                 pub color: computed::CSSColor,
                 pub inset: bool,
+            }
+            impl fmt::Show for BoxShadow {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    write!(f, "{} {} {} {} {}{}", self.offset_x, self.offset_y,
+                           self.blur_radius, self.spread_radius,
+                           self.color, if self.inset { " inset" } else { "" })
+                }
             }
         }
 
@@ -1599,7 +1622,9 @@ pub mod longhands {
                     offset_y: computed::compute_Au(value.offset_y, context),
                     blur_radius: computed::compute_Au(value.blur_radius, context),
                     spread_radius: computed::compute_Au(value.spread_radius, context),
-                    color: value.color.unwrap_or(cssparser::CurrentColor),
+                    color: value.color.map(|color| {
+                        computed::compute_CSSColor(color, context)
+                    }).unwrap_or(cssparser::CurrentColor),
                     inset: value.inset,
                 }
             }).collect()

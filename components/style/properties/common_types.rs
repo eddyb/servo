@@ -102,6 +102,7 @@ pub mod specified {
                 &Au_(length) => write!(f, "{}", length),
                 &Em(length) => write!(f, "{}em", length),
                 &Ex(length) => write!(f, "{}ex", length),
+                &Rem(length) => write!(f, "{}rem", length),
                 &ServoCharacterWidth(_) => panic!("internal CSS values should never be serialized"),
             }
         }
